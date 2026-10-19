@@ -1,5 +1,5 @@
 
-name: Inspect ROSTO Project
+name: Build ROSTO APK
 
 on:
   workflow_dispatch:
@@ -9,17 +9,38 @@ on:
       - '.github/workflows/build-apk.yml'
 
 jobs:
-  inspect:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Download project files
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Inspect ZIP contents
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Extract project
         run: |
-          sudo apt-get update
-          sudo apt-get install -y unzip
-          unzip -l rosto-android-1.zip
-          mkdir -p extracted
           unzip -q rosto-android-1.zip -d extracted
-          find extracted -maxdepth 3 -type f | head -100
+          find extracted -name gradlew -type f
+
+      - name: Build APK
+        run: |
+          cd extracted
+          GRADLEW=$(find . -name gradlew -type f | head -1)
+          if [ -z "$GRADLEW" ]; then
+            echo "Gradle wrapper not found"
+            exit 1
+          fi
+          cd "$(dirname "$GRADLEW")"
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ROSTO-APK
+          path: extracted/**/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
