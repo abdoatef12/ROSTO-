@@ -5,13 +5,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  check:
     runs-on: ubuntu-latest
     steps:
-      - name: Download project
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Check project files
+      - name: Check ZIP
         run: |
-          unzip -l rosto-android-1.zip
-
+          ls -lh
+          unzip -t rosto-android-1.zip
