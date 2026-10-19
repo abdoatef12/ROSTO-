@@ -1,10 +1,36 @@
-      - name: Extract and inspect project
+name: ROSTO
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract project
         run: |
           unzip -q rosto-android-1.zip -d extracted
-          find extracted -type f \( \
-            -name gradlew -o \
-            -name settings.gradle -o \
-            -name settings.gradle.kts -o \
-            -name build.gradle -o \
-            -name build.gradle.kts \
-          \)
+          SETTINGS=$(find extracted -name settings.gradle | head -n1)
+          echo "ROOT=$(dirname "$SETTINGS")" >> $GITHUB_ENV
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Build debug APK
+        working-directory: ${{ env.ROOT }}
+        run: gradle assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ROSTO-apk
+          path: ${{ env.ROOT }}/app/build/outputs/apk/debug/app-debug.apk
